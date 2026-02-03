@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexiFinance MY | RM Tracker & Budget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .receipt-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: pointer; transition: transform 0.2s; }
+        .receipt-preview:hover { transform: scale(1.1); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 50; }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-20">
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Financial Manager (RM)</h1>
+                <p id="current-date" class="text-blue-600 font-medium"></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportToCSV()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition flex items-center gap-2 shadow-md">
+                    📥 Export CSV
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 flex flex-col justify-center">
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Monthly Savings Goal</p>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 font-bold">RM</span>
+                    <input type="number" id="goal-input" onchange="updateGoal()" placeholder="Set Goal" class="text-xl font-bold w-full outline-none border-b-2 border-transparent focus:border-blue-500 transition">
+                </div>
+                <div class="mt-4 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div id="goal-progress" class="progress-bar bg-blue-500 h-full w-0"></div>
+                </div>
+                <p id="goal-percent" class="text-[10px] text-gray-500 mt-1 font-bold">0% reached</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-500">
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">Money In</p>
+                <p id="total-in" class="text-2xl font-black text-green-600">RM 0.00</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-red-500">
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">Money Out</p>
+                <p id="total-out" class="text-2xl font-black text-red-600">RM 0.00</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">Net Balance</p>
+                <p id="net-balance" class="text-2xl font-black text-blue-600">RM 0.00</p>
+            </div>
+        </div>
+
+        <h3 class="text-sm font-bold text-gray-500 uppercase mb-3 ml-1">Spending Breakdown</h3>
+        <div id="category-summary" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8"></div>
+
+        <section class="bg-white p-6 rounded-2xl shadow-sm mb-8 border border-gray-100">
+            <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Description</label>
+                    <input type="text" id="desc" placeholder="Details..." class="w-full p-2.5 border rounded-lg bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Amount (RM)</label>
+                    <input type="number" id="amount" placeholder="0.00" step="0.01" class="w-full p-2.5 border rounded-lg bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Category</label>
+                    <select id="category" class="w-full p-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" required>
+                        <option value="" disabled selected>Select...</option>
+                        <option value="Meal">Meal</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Car">Car</option>
+                        <option value="Telephone bill">Telephone bill</option>
+                        <option value="Internet bill">Internet bill</option>
+                        <option value="Utilities bill">Utilities bill</option>
+                        <option value="Gas">Gas</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="School expenses">School expenses</option>
+                        <option value="Housing Loan">Housing Loan</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Savings/investment">Savings/investment</option>
+                        <option value="Others">Others</option>
+                        <option value="Income">Income/Salary</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Type</label>
+                    <select id="type" class="w-full p-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="out">Money Out (-)</option>
+                        <option value="in">Money In (+)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Receipt</label>
+                    <input type="file" id="receipt" accept="image/*" class="text-xs block w-full text-gray-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 cursor-pointer">
+                </div>
+                <button type="submit" class="lg:col-span-6 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg transition active:scale-95">
+                    Save Transaction
+                </button>
+            </form>
+        </section>
+
+        <div class="flex justify-between items-center mb-4 px-1">
+            <h2 class="text-xl font-bold text-gray-800">History</h2>
+            <div class="relative w-64">
+                <input type="text" id="search-input" onkeyup="filterTransactions()" placeholder="Search history..." class="w-full pl-8 pr-4 py-2 text-sm border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm">
+                <span class="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] tracking-widest font-black">
+                        <tr>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Details</th>
+                            <th class="px-6 py-4">Amount</th>
+                            <th class="px-6 py-4 text-center">Receipt</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-list" class="divide-y divide-gray-50 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 pt-8 mt-8 flex justify-center">
+            <button onclick="clearAllData()" class="text-red-400 hover:text-red-600 text-xs font-bold uppercase tracking-widest transition border border-red-100 px-4 py-2 rounded-lg hover:bg-red-50">
+                ⚠️ Clear All Data
+            </button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="" class="max-w-[90%] max-h-[90%] rounded-xl shadow-2xl border-4 border-white">
+    </div>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('myExpTracker_Final')) || [];
+        let savingsGoal = localStorage.getItem('savingsGoal_RM') || 0;
+        
+        const form = document.getElementById('expense-form');
+        const list = document.getElementById('transaction-list');
+
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-MY', { month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('goal-input').value = savingsGoal;
+
+        updateUI();
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const receiptFile = document.getElementById('receipt').files[0];
+            
+            const transaction = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('en-MY'),
+                desc: document.getElementById('desc').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                type: document.getElementById('type').value,
+                receipt: receiptFile ? URL.createObjectURL(receiptFile) : null
+            };
+
+            transactions.push(transaction);
+            saveAndRefresh();
+            form.reset();
+        });
+
+        function updateGoal() {
+            savingsGoal = document.getElementById('goal-input').value;
+            localStorage.setItem('savingsGoal_RM', savingsGoal);
+            updateUI();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('myExpTracker_Final', JSON.stringify(transactions));
+            updateUI();
+        }
+
+        function filterTransactions() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtered = transactions.filter(t => 
+                t.desc.toLowerCase().includes(term) || t.category.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }
+
+        function updateUI() {
+            renderTable(transactions);
+            updateSummary();
+        }
+
+        function renderTable(data) {
+            list.innerHTML = '';
+            data.forEach((t) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-blue-50/30 transition";
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">${t.date}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-gray-800">${t.desc}</div>
+                        <div class="text-[10px] text-blue-500 uppercase font-black">${t.category}</div>
+                    </td>
+                    <td class="px-6 py-4 font-black ${t.type === 'in' ? 'text-green-600' : 'text-red-500'}">
+                        ${t.type === 'in' ? '+' : '-'} RM ${t.amount.toFixed(2)}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${t.receipt ? `<img src="${t.receipt}" class="receipt-preview mx-auto border" onclick="openModal('${t.receipt}')">` : '<span class="text-gray-200 text-lg">⊖</span>'}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteTx(${t.id})" class="text-gray-300 hover:text-red-500 transition px-2 text-lg">✕</button>
+                    </td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function updateSummary() {
+            let totalIn = 0, totalOut = 0;
+            let catTotals = {};
+
+            transactions.forEach(t => {
+                if(t.type === 'in') totalIn += t.amount;
+                else {
+                    totalOut += t.amount;
+                    catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+                }
+            });
+
+            const net = totalIn - totalOut;
+            document.getElementById('total-in').innerText = `RM ${totalIn.toFixed(2)}`;
+            document.getElementById('total-out').innerText = `RM ${totalOut.toFixed(2)}`;
+            const netEl = document.getElementById('net-balance');
+            netEl.innerText = `RM ${net.toFixed(2)}`;
+            netEl.className = `text-2xl font-black ${net >= 0 ? 'text-blue-600' : 'text-red-600'}`;
+
+            // Goal Progress Logic
+            const progressBar = document.getElementById('goal-progress');
+            const progressText = document.getElementById('goal-percent');
+            if (savingsGoal > 0) {
+                let percent = (net / savingsGoal) * 100;
+                percent = Math.min(Math.max(percent, 0), 100);
+                progressBar.style.width = percent + '%';
+                progressBar.className = percent >= 100 ? 'progress-bar bg-green-500 h-full' : 'progress-bar bg-blue-500 h-full';
+                progressText.innerText = Math.round((net / savingsGoal) * 100) + '% of goal reached';
+            }
+
+            const catSummaryDiv = document.getElementById('category-summary');
+            catSummaryDiv.innerHTML = '';
+            for (const [cat, total] of Object.entries(catTotals)) {
+                catSummaryDiv.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-[9px] text-gray-400 uppercase font-black tracking-tighter truncate">${cat}</p>
+                        <p class="text-md font-bold text-gray-700">RM ${total.toFixed(2)}</p>
+                    </div>`;
+            }
+        }
+
+        function deleteTx(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveAndRefresh();
+        }
+
+        function clearAllData() {
+            if(confirm("Confirm DELETE ALL data?")) {
+                if(confirm("Second confirmation required to wipe data.")) {
+                    transactions = [];
+                    saveAndRefresh();
+                }
+            }
+        }
+
+        function openModal(src) {
+            const modal = document.getElementById('modal');
+            const modalImg = document.getElementById('modal-img');
+            modal.style.display = 'flex';
+            modalImg.src = src;
+        }
+
+        function exportToCSV() {
+            if (transactions.length === 0) return alert("No data!");
+            let csv = "Date,Description,Category,Type,Amount(RM)\n";
+            transactions.forEach(t => csv += `${t.date},${t.desc},${t.category},${t.type},${t.amount}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MY_Expense_Report_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
