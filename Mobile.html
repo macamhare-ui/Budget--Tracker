@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RM Tracker | Dark Mode Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        .receipt-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; p: 20px; }
+        input, select, button { font-size: 16px !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen pb-10 transition-colors duration-300">
+
+    <div class="max-w-md md:max-w-6xl mx-auto px-4 py-6">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">RM Tracker</h1>
+                <p id="current-date" class="text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-wide"></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleDarkMode()" id="dark-toggle" class="bg-slate-200 dark:bg-slate-800 p-3 rounded-full shadow-lg text-xl active:scale-95 transition">
+                    🌙
+                </button>
+                <button onclick="exportToCSV()" class="bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 active:scale-95 transition">
+                    📥
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border-l-4 border-blue-500 col-span-2">
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Savings Goal Progress</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">RM</span>
+                    <input type="number" id="goal-input" onchange="updateGoal()" class="w-full font-black text-lg outline-none bg-transparent dark:text-white" placeholder="Set Goal">
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2">
+                    <div id="goal-progress" class="h-full rounded-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border-b-4 border-green-500">
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">In</p>
+                <p id="total-in" class="text-lg font-black text-green-600 truncate">RM 0</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border-b-4 border-red-500">
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Out</p>
+                <p id="total-out" class="text-lg font-black text-red-600 truncate">RM 0</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 dark:bg-blue-900 p-6 rounded-3xl mb-6 shadow-xl text-center transition-colors">
+            <p class="text-slate-300 dark:text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Available Balance</p>
+            <p id="net-balance" class="text-4xl font-black text-white">RM 0.00</p>
+        </div>
+
+        <section class="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm mb-8 border border-slate-100 dark:border-slate-800">
+            <h2 class="text-sm font-black text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+                <span class="bg-blue-100 dark:bg-blue-900 p-1 rounded">➕</span> New Entry
+            </h2>
+            <form id="expense-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="desc" placeholder="Details (e.g. Nasi Lemak)" class="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" id="amount" placeholder="Amount (RM)" step="0.01" class="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="category" class="p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl outline-none" required>
+                        <option value="" disabled selected>Category</option>
+                        <option value="Meal">Meal</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Car">Car</option>
+                        <option value="Telephone bill">Telephone bill</option>
+                        <option value="Internet bill">Internet bill</option>
+                        <option value="Utilities bill">Utilities bill</option>
+                        <option value="Gas">Gas</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="School expenses">School expenses</option>
+                        <option value="Housing Loan">Housing Loan</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Savings/investment">Savings/investment</option>
+                        <option value="Others">Others</option>
+                        <option value="Income">Income</option>
+                    </select>
+                    <select id="type" class="p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl outline-none font-bold">
+                        <option value="out">OUT (-)</option>
+                        <option value="in">IN (+)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
+                    <span class="text-xl">📸</span>
+                    <input type="file" id="receipt" accept="image/*" class="text-xs text-slate-500 file:hidden">
+                    <label for="receipt" class="text-xs font-bold text-blue-600 dark:text-blue-400">Tap to Upload Receipt</label>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 dark:bg-blue-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition">
+                    SAVE TRANSACTION
+                </button>
+            </form>
+        </section>
+
+        <h3 class="text-xs font-black text-slate-400 dark:text-slate-600 uppercase mb-3 px-1 tracking-widest">Category Totals</h3>
+        <div id="category-summary" class="flex md:grid md:grid-cols-6 gap-3 overflow-x-auto pb-4 no-scrollbar"></div>
+
+        <div class="flex justify-between items-end mb-4 px-1">
+            <h2 class="text-lg font-black text-slate-800 dark:text-white">History</h2>
+            <input type="text" id="search-input" onkeyup="filterTransactions()" placeholder="🔍 Search..." class="p-2 text-sm bg-transparent border-b-2 border-slate-200 dark:border-slate-800 dark:text-white outline-none focus:border-blue-500">
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm overflow-hidden mb-12">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">
+                        <tr>
+                            <th class="px-6 py-4">Item</th>
+                            <th class="px-6 py-4 text-center">Amount</th>
+                            <th class="px-6 py-4 text-center">Receipt</th>
+                            <th class="px-6 py-4"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-list" class="divide-y divide-slate-50 dark:divide-slate-800 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-center">
+            <button onclick="clearAllData()" class="text-red-300 dark:text-red-900 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.2em]">
+                ⚠️ Reset All Data
+            </button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="" class="max-w-full max-h-[80vh] rounded-2xl border-4 border-white shadow-2xl">
+    </div>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('ExpRM_Final')) || [];
+        let savingsGoal = localStorage.getItem('Goal_RM') || 0;
+        let isDark = localStorage.getItem('DarkMode') === 'true';
+        
+        const form = document.getElementById('expense-form');
+        const list = document.getElementById('transaction-list');
+
+        // Dark Mode Logic
+        if(isDark) document.getElementById('html-tag').classList.add('dark');
+        function toggleDarkMode() {
+            isDark = !isDark;
+            document.getElementById('html-tag').classList.toggle('dark');
+            document.getElementById('dark-toggle').innerText = isDark ? '☀️' : '🌙';
+            localStorage.setItem('DarkMode', isDark);
+        }
+
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+        document.getElementById('goal-input').value = savingsGoal;
+
+        updateUI();
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const receiptFile = document.getElementById('receipt').files[0];
+            const transaction = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short' }),
+                desc: document.getElementById('desc').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                type: document.getElementById('type').value,
+                receipt: receiptFile ? URL.createObjectURL(receiptFile) : null
+            };
+            transactions.unshift(transaction);
+            saveAndRefresh();
+            form.reset();
+        });
+
+        function updateGoal() {
+            savingsGoal = document.getElementById('goal-input').value;
+            localStorage.setItem('Goal_RM', savingsGoal);
+            updateUI();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('ExpRM_Final', JSON.stringify(transactions));
+            updateUI();
+        }
+
+        function filterTransactions() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtered = transactions.filter(t => t.desc.toLowerCase().includes(term) || t.category.toLowerCase().includes(term));
+            renderTable(filtered);
+        }
+
+        function updateUI() {
+            renderTable(transactions);
+            updateSummary();
+        }
+
+        function renderTable(data) {
+            list.innerHTML = '';
+            data.forEach((t) => {
+                const row = document.createElement('tr');
+                row.className = "dark:border-slate-800";
+                row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800 dark:text-slate-200">${t.desc}</div>
+                        <div class="text-[9px] text-blue-500 dark:text-blue-400 uppercase font-black">${t.category} • ${t.date}</div>
+                    </td>
+                    <td class="px-6 py-4 text-center font-black ${t.type === 'in' ? 'text-green-600' : 'text-red-500'}">
+                        RM ${t.amount.toFixed(2)}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${t.receipt ? `<img src="${t.receipt}" class="receipt-preview mx-auto" onclick="openModal('${t.receipt}')">` : '<span class="text-slate-200 dark:text-slate-700">∅</span>'}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteTx(${t.id})" class="text-slate-300 dark:text-slate-700 text-lg px-2">✕</button>
+                    </td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function updateSummary() {
+            let totalIn = 0, totalOut = 0, catTotals = {};
+            transactions.forEach(t => {
+                if(t.type === 'in') totalIn += t.amount;
+                else { totalOut += t.amount; catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; }
+            });
+
+            const net = totalIn - totalOut;
+            document.getElementById('total-in').innerText = `RM ${totalIn.toFixed(0)}`;
+            document.getElementById('total-out').innerText = `RM ${totalOut.toFixed(0)}`;
+            document.getElementById('net-balance').innerText = `RM ${net.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`;
+
+            if (savingsGoal > 0) {
+                let percent = Math.min(Math.max((net / savingsGoal) * 100, 0), 100);
+                document.getElementById('goal-progress').style.width = percent + '%';
+            }
+
+            const catSummaryDiv = document.getElementById('category-summary');
+            catSummaryDiv.innerHTML = '';
+            for (const [cat, total] of Object.entries(catTotals)) {
+                catSummaryDiv.innerHTML += `
+                    <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 min-w-[100px] flex-shrink-0 text-center shadow-sm">
+                        <p class="text-[8px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-tighter">${cat}</p>
+                        <p class="text-xs font-black text-slate-700 dark:text-white">RM ${total.toFixed(0)}</p>
+                    </div>`;
+            }
+        }
+
+        function deleteTx(id) {
+            if(confirm('Delete?')) { transactions = transactions.filter(t => t.id !== id); saveAndRefresh(); }
+        }
+
+        function clearAllData() {
+            if(confirm("Wipe all data?") && confirm("Final check!")) { transactions = []; saveAndRefresh(); }
+        }
+
+        function openModal(src) {
+            const modal = document.getElementById('modal');
+            const modalImg = document.getElementById('modal-img');
+            modal.style.display = 'flex';
+            modalImg.src = src;
+        }
+
+        function exportToCSV() {
+            let csv = "Date,Description,Category,Type,Amount\n";
+            transactions.forEach(t => csv += `${t.date},${t.desc},${t.category},${t.type},${t.amount}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Budget_RM.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
